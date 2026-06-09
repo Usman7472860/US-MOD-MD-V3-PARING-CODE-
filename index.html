@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US MOD MD — Bot Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f0a;
+    --surface: #111711;
+    --card: #161e16;
+    --border: #1e2e1e;
+    --green: #22c55e;
+    --green-dim: #166534;
+    --green-glow: rgba(34,197,94,0.15);
+    --yellow: #eab308;
+    --red: #ef4444;
+    --text: #e8f5e8;
+    --muted: #6b8f6b;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+  header { width: 100%; padding: 18px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .logo-dot { width: 10px; height: 10px; background: var(--green); border-radius: 50%; box-shadow: 0 0 10px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  header h1 { font-size: 18px; font-weight: 700; color: var(--green); }
+  header span { font-size: 12px; color: var(--muted); font-family: var(--mono); margin-left: auto; }
+
+  main { width: 100%; max-width: 560px; padding: 28px 16px; display: flex; flex-direction: column; gap: 20px; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .card-title { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 18px; }
+
+  /* Config box */
+  .config-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-family: var(--mono); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow); }
+  input::placeholder { color: var(--muted); }
+
+  button { background: var(--green); color: #000; border: none; border-radius: 10px; padding: 11px 18px; font-family: var(--font); font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s, transform 0.1s; white-space: nowrap; }
+  button:hover { opacity: 0.85; }
+  button:active { transform: scale(0.97); }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .code-box { display: none; margin-top: 18px; background: var(--surface); border: 1px solid var(--green-dim); border-radius: 12px; padding: 20px; text-align: center; }
+  .code-box.show { display: block; }
+  .code-label { font-size: 11px; color: var(--muted); margin-bottom: 10px; font-family: var(--mono); }
+  .code-value { font-family: var(--mono); font-size: 32px; font-weight: 700; color: var(--green); letter-spacing: 5px; text-shadow: 0 0 20px var(--green-glow); }
+  .code-steps { margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 2; text-align: left; }
+  .code-steps b { color: var(--text); }
+
+  .alert { display: none; padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-top: 12px; }
+  .alert.show { display: block; }
+  .alert.error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+  .alert.success { background: var(--green-glow); border: 1px solid var(--green-dim); color: var(--green); }
+  .alert.info { background: rgba(234,179,8,0.08); border: 1px solid rgba(234,179,8,0.3); color: var(--yellow); }
+
+  .sessions-list { display: flex; flex-direction: column; gap: 10px; }
+  .session-item { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .sdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .sdot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .sdot.connecting,.sdot.reconnecting { background: var(--yellow); animation: pulse 1s infinite; }
+  .sdot.logged_out,.sdot.error { background: var(--red); }
+  .sinfo { flex: 1; }
+  .sname { font-size: 14px; font-weight: 600; }
+  .sphone { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .sbadge { font-size: 10px; font-family: var(--mono); padding: 3px 8px; border-radius: 20px; text-transform: uppercase; }
+  .sbadge.connected { background: var(--green-glow); color: var(--green); }
+  .sbadge.connecting,.sbadge.reconnecting { background: rgba(234,179,8,0.1); color: var(--yellow); }
+  .sbadge.logged_out,.sbadge.error { background: rgba(239,68,68,0.1); color: var(--red); }
+  .btn-out { background: transparent; border: 1px solid rgba(239,68,68,0.3); color: var(--red); font-size: 11px; padding: 5px 10px; border-radius: 6px; }
+  .btn-out:hover { background: rgba(239,68,68,0.1); opacity: 1; }
+  .empty { text-align: center; color: var(--muted); font-size: 13px; padding: 14px 0; }
+  .row-top { display: flex; align-items: center; margin-bottom: 14px; }
+  .row-top .card-title { margin-bottom: 0; }
+  .btn-refresh { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 8px; margin-left: auto; }
+  .btn-refresh:hover { border-color: var(--green); color: var(--green); opacity: 1; }
+
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid #000; border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 5px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer { margin-top: auto; padding: 20px; font-size: 11px; color: var(--muted); font-family: var(--mono); text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-dot"></div>
+  <h1>US MOD MD</h1>
+  <span>Multi-Session Panel</span>
+</header>
+
+<main>
+
+  <!-- Config -->
+  <div class="card">
+    <div class="card-title">Bot Server Config</div>
+    <div class="config-row">
+      <input type="text" id="botUrl" placeholder="http://fi5.bot-hosting.net:20121" value="">
+    </div>
+    <div class="config-row">
+      <input type="password" id="apiSecret" placeholder="API Secret (settings.js mein jo likha)">
+      <button onclick="saveConfig()">Save</button>
+    </div>
+    <p class="hint">Ek baar save karo — browser mein store ho jaega</p>
+    <div class="alert" id="cfgAlert"></div>
+  </div>
+
+  <!-- Pair -->
+  <div class="card">
+    <div class="card-title">Connect New Number</div>
+    <div class="config-row">
+      <input type="tel" id="phoneInput" placeholder="923xxxxxxxxx" maxlength="15">
+      <button id="pairBtn" onclick="getPairingCode()">Get Code</button>
+    </div>
+    <p class="hint">Country code ke saath — example: 923001234567</p>
+    <div class="alert" id="pairAlert"></div>
+    <div class="code-box" id="codeBox">
+      <div class="code-label">WhatsApp Pairing Code</div>
+      <div class="code-value" id="codeValue">----</div>
+      <div class="code-steps">
+        <b>Steps:</b><br>
+        1. WhatsApp → Settings<br>
+        2. Linked Devices → Link a Device<br>
+        3. "Link with phone number instead" tap karein<br>
+        4. Upar wala code enter karein
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions -->
+  <div class="card">
+    <div class="row-top">
+      <div class="card-title">Active Sessions</div>
+      <button class="btn-refresh" onclick="loadSessions()">↻ Refresh</button>
+    </div>
+    <div class="sessions-list" id="sessionsList">
+      <div class="empty">Save config pehle, phir sessions load honge</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>©US MOD MD — USMAN KHAN CHACHAR</footer>
+
+<script>
+  // Load saved config
+  let BOT_URL = localStorage.getItem('botUrl') || '';
+  let API_SECRET = localStorage.getItem('apiSecret') || '';
+
+  window.onload = () => {
+    if (BOT_URL) document.getElementById('botUrl').value = BOT_URL;
+    if (BOT_URL && API_SECRET) loadSessions();
+  };
+
+  function saveConfig() {
+    BOT_URL = document.getElementById('botUrl').value.trim().replace(/\/$/, '');
+    API_SECRET = document.getElementById('apiSecret').value.trim();
+    localStorage.setItem('botUrl', BOT_URL);
+    localStorage.setItem('apiSecret', API_SECRET);
+    showAlert('cfgAlert', 'success', '✅ Config save ho gaya!');
+    loadSessions();
+  }
+
+  function showAlert(id, type, msg) {
+    const el = document.getElementById(id);
+    el.className = `alert ${type} show`;
+    el.textContent = msg;
+  }
+  function hideAlert(id) {
+    document.getElementById(id).className = 'alert';
+  }
+
+  async function apiCall(endpoint, method = 'GET', body = null) {
+    if (!BOT_URL) throw new Error('Bot URL save karo pehle');
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json', 'x-api-secret': API_SECRET }
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(BOT_URL + endpoint, opts);
+    return res.json();
+  }
+
+  async function getPairingCode() {
+    const phone = document.getElementById('phoneInput').value.trim().replace(/[^0-9]/g, '');
+    const btn = document.getElementById('pairBtn');
+    hideAlert('pairAlert');
+    document.getElementById('codeBox').className = 'code-box';
+
+    if (!BOT_URL || !API_SECRET) {
+      showAlert('pairAlert', 'error', '❌ Pehle config save karo (upar wala section)');
+      return;
+    }
+    if (!phone || phone.length < 10) {
+      showAlert('pairAlert', 'error', '❌ Valid number dalo (country code ke saath)');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Wait...';
+    showAlert('pairAlert', 'info', '⏳ Pairing code aa raha hai...');
+
+    try {
+      const data = await apiCall('/pair', 'POST', { phone });
+      if (data.success) {
+        document.getElementById('codeValue').textContent = data.code;
+        document.getElementById('codeBox').className = 'code-box show';
+        showAlert('pairAlert', 'success', '✅ Code mil gaya! 3 minute mein enter karein.');
+        setTimeout(loadSessions, 6000);
+      } else {
+        showAlert('pairAlert', 'error', '❌ ' + (data.message || 'Error'));
+      }
+    } catch (e) {
+      showAlert('pairAlert', 'error', '❌ Bot server se connect nahi hua: ' + e.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = 'Get Code';
+  }
+
+  async function loadSessions() {
+    const list = document.getElementById('sessionsList');
+    if (!BOT_URL || !API_SECRET) return;
+    try {
+      const data = await apiCall('/sessions');
+      const sessions = data.sessions || [];
+      if (!sessions.length) {
+        list.innerHTML = '<div class="empty">Koi session connected nahi</div>';
+        return;
+      }
+      list.innerHTML = sessions.map(s => `
+        <div class="session-item">
+          <div class="sdot ${s.status}"></div>
+          <div class="sinfo">
+            <div class="sname">${s.name || s.phone}</div>
+            <div class="sphone">${s.phone}</div>
+          </div>
+          <span class="sbadge ${s.status}">${s.status}</span>
+          <button class="btn-out" onclick="disconnect('${s.phone}')">Logout</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      list.innerHTML = '<div class="empty">Load nahi hua — config check karo</div>';
+    }
+  }
+
+  async function disconnect(phone) {
+    if (!confirm(phone + ' logout karna chahte hain?')) return;
+    await apiCall('/disconnect', 'POST', { phone });
+    loadSessions();
+  }
+
+  document.getElementById('phoneInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') getPairingCode();
+  });
+
+  setInterval(() => { if (BOT_URL && API_SECRET) loadSessions(); }, 8000);
+</script>
+</body>
+</html>
